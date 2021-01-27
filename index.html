@@ -1,0 +1,311 @@
+<html>
+     <head>
+          <title>
+               Particle Physics
+          </title>
+     </head>
+     <style>
+	
+          canvas{
+               position:absolute;
+               left:50%;
+               top:50%;
+               margin-left:-195px;
+               margin-top:-256;
+          }
+
+          #ink_stats{
+               position:absolute;
+			text-align:center;
+               top:50%;
+               margin-top:150px;
+               right:50%;
+               margin-right:195px;
+               width:100px;
+               height:50px;
+          }
+		
+		button{
+			border-radius:5px;
+			border:1px solid black;
+			background:white;
+		}
+		
+		body{
+			cursor: crosshair;
+		}
+		
+     </style>
+     <body>
+          <canvas id="canvas" right="0" width="390" height="512" onmousedown="click_mouse()" onmouseup="unclick_mouse()" onmouseout="unclick_mouse()" onmousemove="draw_ink(false)">
+		</canvas>
+         
+	    <div id="ink_stats">
+	         <button type="button" id="tool" onclick="swap_tool()">
+		         Swap Tool
+		    </button>
+		    <br>
+		    <small>
+		         (Using:
+			    <span id="using">
+			    </span>)
+		    </small>
+		    <br>
+		    <br>
+             
+              <br>
+              
+          </div>
+     </body>
+     <script>
+
+          var REFRESH_INTERVAL = 20;
+          var WIDTH = 390;
+          var HEIGHT = 512;
+          var canvas;
+          var ctx;
+          var eraser = false;
+          var spaces = [];
+          var spaces2 = [];
+          var ink = 35000000000000;
+          var erases = 3000000;
+          var clicking = 0;
+          var previousX = 1000;
+          var PreviousY = 1000;
+		var gamewon = 0;
+
+
+          begin();
+
+          function begin(){
+			document.getElementById("using").innerText = "Pencil";
+               canvas = document.getElementById('canvas');
+               for(var i=0; i<195; i++){
+                    spaces.push([]);
+                    spaces2.push([]);
+                    for(var a=0; a<256; a++){
+                         spaces[i].push(0);
+                         spaces2[i].push(0);
+                    }
+               }
+
+               if (canvas.getContext) {
+                    ctx = canvas.getContext('2d');
+                    drawWalls(ctx);
+                    render(ctx);
+               }
+
+               spawndrip();
+               
+          }
+
+          function drawWalls (ctx) {
+               ctx.fillStyle = 'rgba(0, 0, 0, 1)'; //r g b opacity
+               draw(ctx, 0, 0, 1, 1, 256);//left wall
+               draw(ctx, 0, 0, 1, 195, 1);//floor
+               draw(ctx, 194, 0, 1, 1, 256);//right wall
+               5
+          }
+
+          function draw(ctx, left, bottom, status, width, height){
+               if(status === 0){
+                    ctx.fillStyle = 'rgba(255, 255, 255, 1)';
+               } else if(status === 1){
+                    ctx.fillStyle = 'rgba(0, 0, 0, 1)';
+               } else if(status === 2){
+                    ctx.fillStyle = 'rgba(' + Math.floor(Math.random()*50) + ',' + Math.floor(Math.random()*50) + ', ' + 100+Math.floor(Math.random()*155) + ', 1)';
+               }
+               //status : 0 = empty, 1 = full, 2 = drip
+               ctx.fillRect((left*2), (510-(bottom*2) - height*2), (width*2), (height*2));
+
+               for(var i=1; i<=width; i++){
+                    for(var a=1; a<=height; a++){
+                         spaces[left-1+i][bottom-1+a] = status;
+                    }
+               }
+          }
+
+          function spawndrip(){
+               spaces[97][254] = 2;
+
+               setTimeout(function(){check_space(97, 254);}, REFRESH_INTERVAL);
+               setTimeout(function () { spawndrip(); }, REFRESH_INTERVAL * 5);
+               ink = ink + 30;
+               erases = erases + 0.1;
+          }
+
+          function check_space(left, bottom){
+               if(spaces[left][bottom] === 2){
+                    if(spaces[left][bottom-1] === 0){
+                         spaces[left][bottom] = 0;
+                         spaces[left][bottom-1] = 2;
+                         setTimeout(function(){check_space(left, (bottom-1));check_space(left, (bottom+1));check_space(left-1, (bottom+1));check_space(left+1, (bottom+1))}, REFRESH_INTERVAL)
+                    } else
+                    if(spaces[left + 1][bottom] === 0 && spaces[left + 1][bottom - 1] === 0){
+                         spaces[left][bottom] = 0;
+                         spaces[left + 1][bottom] = 2;
+                         setTimeout(function(){check_space((left + 1), (bottom));check_space(left, (bottom+1));check_space(left-1, (bottom+1));check_space(left+1, (bottom+1))}, REFRESH_INTERVAL)
+                    } else
+                    if(spaces[left - 1][bottom] === 0 && spaces[left - 1][bottom - 1] === 0){
+                         spaces[left][bottom] = 0;
+                         spaces[left - 1][bottom] = 2;
+                         setTimeout(function(){check_space((left - 1), (bottom));check_space(left, (bottom+1));check_space(left-1, (bottom+1));check_space(left+1, (bottom+1))}, REFRESH_INTERVAL)
+                    } else
+                    if(spaces[left+2][bottom-1] === 0 && spaces[left+2][bottom] === 0 && spaces[left+1][bottom] === 0) {
+                         spaces[left][bottom] = 0;
+                         spaces[left + 1][bottom] = 2;
+                         setTimeout(function(){check_space((left + 1), (bottom));check_space(left, (bottom+1));check_space(left-1, (bottom+1));check_space(left+1, (bottom+1))}, REFRESH_INTERVAL)
+                    } else
+                    if(spaces[left-2][bottom-1] === 0 && spaces[left-2][bottom] === 0 && spaces[left-1][bottom] === 0) {
+                         spaces[left][bottom] = 0;
+                         spaces[left - 1][bottom] = 2;
+                         setTimeout(function(){check_space((left - 1), (bottom));check_space(left, (bottom+1));check_space(left-1, (bottom+1));check_space(left+1, (bottom+1))}, REFRESH_INTERVAL)
+                    }
+                  
+               }
+          }
+          function render(ctx) {
+
+               var time = new Date().getTime();
+               var inMemoryCanvas = document.createElement('canvas');
+               inMemoryCanvas.width = WIDTH;
+               inMemoryCanvas.height = HEIGHT;
+               var inMemoryCtx = canvas.getContext('2d');
+               drawWalls(inMemoryCtx);
+
+               for(var i=0; i<195; i++){
+                    for(var a=0; a<256; a++){
+                         if(spaces[i][a] !== spaces2[i][a]){
+                              draw(inMemoryCtx, i, a, spaces[i][a], 1, 1);
+                              spaces2[i][a] = spaces[i][a];
+                         }
+                    }
+               }
+
+               ctx.drawImage(inMemoryCanvas, 0, 0);
+
+               setTimeout(function() { render(ctx); }, REFRESH_INTERVAL)
+
+          }
+
+          function draw_ink(question){
+			 var mouseX = Math.floor(event.clientX - ((window.innerWidth/2) - 195));
+                var mouseY = Math.floor(-(event.clientY - ((window.innerHeight/2) + 253)));
+               if(clicking==1){
+				if(eraser == true  ){
+					if(erases>=1 && question == true){
+						erases = erases - 1;
+						spaces[Math.floor((mouseX/2))][Math.floor(mouseY/2)] = 0;
+						
+						spaces[Math.floor((mouseX+2)/2)][Math.floor((mouseY)/2)] = 0;
+						spaces[Math.floor((mouseX)/2)][Math.floor((mouseY+2)/2)] = 0;
+						spaces[Math.floor((mouseX+2)/2)][Math.floor((mouseY+2)/2)] = 0;
+						spaces[Math.floor((mouseX-2)/2)][Math.floor((mouseY)/2)] = 0;
+						spaces[Math.floor((mouseX)/2)][Math.floor((mouseY-2)/2)] = 0;
+						spaces[Math.floor((mouseX-2)/2)][Math.floor((mouseY-2)/2)] = 0;
+						spaces[Math.floor((mouseX-2)/2)][Math.floor((mouseY+2)/2)] = 0;
+						spaces[Math.floor((mouseX+2)/2)][Math.floor((mouseY-2)/2)] = 0;
+						
+						spaces[Math.floor((mouseX+4)/2)][Math.floor((mouseY)/2)] = 0;
+						spaces[Math.floor((mouseX)/2)][Math.floor((mouseY+4)/2)] = 0;
+						spaces[Math.floor((mouseX+4)/2)][Math.floor((mouseY+4)/2)] = 0;
+						spaces[Math.floor((mouseX-4)/2)][Math.floor((mouseY)/2)] = 0;
+						spaces[Math.floor((mouseX)/2)][Math.floor((mouseY-4)/2)] = 0;
+						spaces[Math.floor((mouseX-4)/2)][Math.floor((mouseY-4)/2)] = 0;
+						spaces[Math.floor((mouseX-4)/2)][Math.floor((mouseY+4)/2)] = 0;
+						spaces[Math.floor((mouseX+4)/2)][Math.floor((mouseY-4)/2)] = 0;
+						
+						spaces[Math.floor((mouseX+4)/2)][Math.floor((mouseY+2)/2)] = 0;
+						spaces[Math.floor((mouseX+4)/2)][Math.floor((mouseY-2)/2)] = 0;
+						spaces[Math.floor((mouseX-4)/2)][Math.floor((mouseY+2)/2)] = 0;
+						spaces[Math.floor((mouseX-4)/2)][Math.floor((mouseY-2)/2)] = 0;
+						spaces[Math.floor((mouseX+2)/2)][Math.floor((mouseY-4)/2)] = 0;
+						spaces[Math.floor((mouseX+2)/2)][Math.floor((mouseY+4)/2)] = 0;
+						spaces[Math.floor((mouseX-2)/2)][Math.floor((mouseY+4)/2)] = 0;
+						spaces[Math.floor((mouseX-2)/2)][Math.floor((mouseY-4)/2)] = 0;
+						
+						check_space(Math.floor((mouseX)/2), Math.floor((mouseY+4)/2));
+						check_space(Math.floor((mouseX+2)/2), Math.floor((mouseY+6)/2));
+						check_space(Math.floor((mouseX-2)/2), Math.floor((mouseY+6)/2));
+						check_space(Math.floor((mouseX+4)/2), Math.floor((mouseY+6)/2));
+						check_space(Math.floor((mouseX-4)/2), Math.floor((mouseY+6)/2));
+						check_space(Math.floor((mouseX+6)/2), Math.floor((mouseY+6)/2));
+						check_space(Math.floor((mouseX-6)/2), Math.floor((mouseY+6)/2));
+						
+						check_space(Math.floor((mouseX+6)/2), Math.floor((mouseY+4)/2));
+						check_space(Math.floor((mouseX+6)/2), Math.floor((mouseY+2)/2));
+						check_space(Math.floor((mouseX+6)/2), Math.floor((mouseY+0)/2));
+						check_space(Math.floor((mouseX+6)/2), Math.floor((mouseY-2)/2));
+						check_space(Math.floor((mouseX-4)/2), Math.floor((mouseY+4)/2));
+						check_space(Math.floor((mouseX-4)/2), Math.floor((mouseY+2)/2));
+						check_space(Math.floor((mouseX-6)/2), Math.floor((mouseY+0)/2));
+						check_space(Math.floor((mouseX-6)/2), Math.floor((mouseY-2)/2));
+						
+					}return;
+				}
+                   
+                    draw_ink2(mouseX, mouseY);
+                    previousX = Math.floor(event.clientX - ((window.innerWidth/2) - 195));
+                    previousY = Math.floor(-(event.clientY - ((window.innerHeight/2) + 256)));
+               }
+			
+          }
+          function draw_ink2(mouseX, mouseY) {
+		
+              if(mouseY<450){
+		       
+                            if (previousX < 1000) {
+                                 var ySlope = (previousY-mouseY)/(previousX-mouseX);
+                                 var xDiff = mouseX - previousX;
+                                 var increment = xDiff > 0 ? 1 : -1;
+                                 var points = Math.abs(xDiff);
+                                 var lastYPoint = previousY;
+
+                                 for (var i = 1; i < points; i += 0.25){
+                                      if (ink > 0) {
+                                           lastYPoint = lastYPoint + (increment / 4) * ySlope;
+                                           var floorY = Math.floor(lastYPoint);
+
+                                           var xPos = previousX + (increment * i);
+                                           
+                                           spaces[Math.floor((xPos) / 2)][Math.floor(lastYPoint / 2)] = 1;
+                                           ink = ink - 0.25 - (Math.abs(ySlope)*0.25);
+                                      }
+                                 }
+                                 if (ink > 0){
+                                      spaces[Math.floor(mouseX / 2)][Math.floor(mouseY / 2)] = 1;
+                                      ink--;
+                                 }
+				
+
+                              
+			          
+			     }
+			}
+          }
+          
+          function click_mouse(){
+               clicking = 1;
+			draw_ink(true);
+          }
+		
+          function unclick_mouse(){
+               clicking = 0;
+               previousX = 1000;
+               previousY = 1000;
+          }
+		
+		function swap_tool(){
+			if(eraser){
+				eraser = false;
+				document.getElementById("tool").innerText = "Swap Tool";
+				document.getElementById("using").innerText = "Pencil";
+			}else{
+				eraser = true;
+				document.getElementById("tool").innerText = "Swap Tool";
+                    document.getElementById("using").innerText = "Eraser";
+			}
+		}
+
+     </script>
+</html>
